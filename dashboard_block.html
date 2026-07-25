@@ -1,0 +1,119 @@
+<!-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ DASHBOARD PAGE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ -->
+<div class="page" id="page-dashboard">
+  <div class="max-w-[1400px] mx-auto px-6 py-10">
+
+    <!-- Header row -->
+    <div class="flex items-start justify-between mb-8 flex-wrap gap-4">
+      <div>
+        <div class="inline-flex items-center gap-2 bg-surface-container border border-border-slate rounded-full px-4 py-1.5 mb-3">
+          <span class="font-mono text-[10px] tracking-widest text-primary uppercase">≡ƒôí Live Monitoring</span>
+        </div>
+        <h2 class="font-display font-bold text-3xl tracking-tight text-on-surface mb-1">LLM Observability</h2>
+        <p class="text-text-dim text-sm">Real-time inference metrics, policy distribution, latency trends and per-backend LLM call logs.</p>
+      </div>
+      <div class="flex items-center gap-3 mt-2">
+        <div class="flex items-center gap-2 text-sm text-emerald-success">
+          <span class="w-2 h-2 rounded-full bg-emerald-success pulse-live"></span> Live ┬╖ 15s refresh
+        </div>
+        <span id="lastUpdated" class="text-text-dim text-xs font-mono hidden sm:block">ΓÇö</span>
+        <button onclick="loadDashboard()" class="flex items-center gap-1.5 px-4 py-1.5 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary hover:border-primary-container/50 text-sm transition-all font-body">
+          <span class="material-symbols-outlined text-base">refresh</span> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Metric cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="metricsGrid">
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-primary-container mb-3 block">query_stats</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Total Queries</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mTotal">ΓÇö</p>
+        <p class="text-text-dim text-xs mt-1">since server start</p>
+      </div>
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-tertiary mb-3 block">timer</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Avg Latency</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mLatency">ΓÇö</p>
+        <p class="text-text-dim text-xs mt-1">ms end-to-end</p>
+      </div>
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-emerald-success mb-3 block">target</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Avg Confidence</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mConf">ΓÇö</p>
+        <p class="text-text-dim text-xs mt-1">composer output</p>
+      </div>
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-ruby-error mb-3 block">warning</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Error Rate</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mErr">ΓÇö</p>
+        <p class="text-text-dim text-xs mt-1" id="mErrCount">errors</p>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+      <div class="glass-card rounded-2xl p-5">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-5">Policy Distribution</p>
+        <div class="relative h-56"><canvas id="policyChart"></canvas></div>
+      </div>
+      <div class="glass-card rounded-2xl p-5">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-5">Query Latency ┬╖ 5-min buckets (ms)</p>
+        <div class="relative h-56"><canvas id="latencyChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- LLM Backends summary -->
+    <div class="glass-card rounded-2xl p-5 mb-6" id="backendSummary"></div>
+
+    <!-- Queries table -->
+    <div class="glass-card rounded-2xl overflow-hidden mb-5">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-border-slate">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest">Recent Queries</p>
+        <button onclick="loadDashboard()" class="flex items-center gap-1 px-3 py-1 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary text-xs transition-all font-body">
+          <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-border-slate">
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Time</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Query</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Policy</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Confidence</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Latency</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Retrieval</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Answer</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Status</th>
+            <th class="text-center px-3 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest w-12">View</th>
+          </tr></thead>
+          <tbody id="queryTbody" class="divide-y divide-border-slate/50"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LLM calls table -->
+    <div class="glass-card rounded-2xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-slate">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest">LLM Calls ┬╖ Per Backend</p>
+        <p class="text-text-dim text-xs mt-1.5">Offline rollouts (<code class="font-mono text-primary">context=rollout</code>) populate this table. Live <code class="font-mono">/query</code> uses heuristics unless <code class="font-mono">INFERENCE_BACKEND=ollama</code>.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-border-slate">
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Time</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Backend</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Agent</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Model</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Context</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Latency</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Prompt</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Response</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Status</th>
+          </tr></thead>
+          <tbody id="llmTbody" class="divide-y divide-border-slate/50"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>

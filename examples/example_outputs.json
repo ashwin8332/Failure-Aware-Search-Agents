@@ -1,0 +1,20 @@
+{
+  "confident": {
+    "query": "What is the capital of the country where the Eiffel Tower is located?",
+    "policy": "confident",
+    "final_response": "Policy: confident\nFinal Response: Paris is the capital of France, where the Eiffel Tower is located.\nConfidence: 78% — verification=confirmed, retrieval-adjusted.",
+    "confidence": 0.78
+  },
+  "hedged": {
+    "query": "What drug treats both malaria and lupus?",
+    "policy": "hedge",
+    "final_response": "Policy: hedge\nFinal Response: Based on limited evidence: hydroxychloroquine is cited for both conditions, but sources may disagree on scope and contraindications.\nConfidence: 48% — verification=unverified, retrieval-adjusted.",
+    "confidence": 0.48
+  },
+  "re_search": {
+    "query": "Who became president immediately after JFK?",
+    "policy": "re_search",
+    "final_response": "Policy: re_search\nFinal Response: Sources conflict or are insufficient. Historical records generally indicate Lyndon B. Johnson, but retrieval quality was low — consider rephrasing with a specific date range.\nConfidence: 32% — verification=conflicted, retrieval-adjusted.",
+    "confidence": 0.32
+  }
+}

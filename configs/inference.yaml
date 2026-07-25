@@ -1,0 +1,16 @@
+# Live inference configuration
+# Override via environment: INFERENCE_BACKEND, OLLAMA_MODEL, USE_DPO, DPO_CHECKPOINT
+
+backend: ollama        # mock | ollama | adk
+ollama_model: tinyllama
+ollama_host: http://localhost:11434
+
+# DPO fine-tuned checkpoint (after training/dpo_train.py)
+use_dpo: false
+dpo_checkpoint: ./checkpoints/dpo-failure-aware
+
+# Per-agent Ollama models (optional — defaults to ollama_model for all three)
+agents:
+  search_model: null
+  verification_model: null
+  composer_model: null

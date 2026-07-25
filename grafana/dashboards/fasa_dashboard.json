@@ -1,0 +1,398 @@
+{
+  "id": null,
+  "uid": "fasa-main",
+  "title": "FASA — Failure-Aware Search Agents",
+  "tags": ["fasa", "llm", "search"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 3,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+
+    { "id": 1, "type": "stat", "title": "Total Requests",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "graphMode": "area", "textMode": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }]}}},
+      "targets": [{ "datasource": "Prometheus", "expr": "sum(fasa_requests_total)", "legendFormat": "" }]
+    },
+
+    { "id": 2, "type": "stat", "title": "Success Rate",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "percentunit",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "red", "value": null },
+          { "color": "yellow", "value": 0.8 },
+          { "color": "green", "value": 0.95 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "sum(fasa_requests_total{status='ok'}) / sum(fasa_requests_total)", "legendFormat": "" }]
+    },
+
+    { "id": 3, "type": "stat", "title": "Failed Requests",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": {
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 1 },
+          { "color": "red", "value": 5 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "sum(fasa_requests_total{status='error'}) or vector(0)", "legendFormat": "" }]
+    },
+
+    { "id": 4, "type": "stat", "title": "Avg Response Time (ms)",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0,
+        "displayName": "ms",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 5000 },
+          { "color": "red", "value": 15000 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "rate(fasa_request_latency_seconds_sum[5m]) / rate(fasa_request_latency_seconds_count[5m]) * 1000",
+        "legendFormat": "" }]
+    },
+
+    { "id": 5, "type": "stat", "title": "Active Users",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "fasa_active_users_gauge", "legendFormat": "" }]
+    },
+
+    { "id": 6, "type": "stat", "title": "Avg Confidence",
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "percentunit",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "red", "value": null },
+          { "color": "yellow", "value": 0.4 },
+          { "color": "green", "value": 0.7 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "fasa_confidence_gauge", "legendFormat": "" }]
+    },
+
+    { "id": 7, "type": "stat", "title": "CPU Usage",
+      "gridPos": { "x": 0, "y": 4, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "percent",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 70 },
+          { "color": "red", "value": 90 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "system_cpu_percent", "legendFormat": "" }]
+    },
+
+    { "id": 8, "type": "stat", "title": "Memory Usage",
+      "gridPos": { "x": 4, "y": 4, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "percent",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 75 },
+          { "color": "red", "value": 90 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "system_memory_percent", "legendFormat": "" }]
+    },
+
+    { "id": 9, "type": "stat", "title": "Error Rate",
+      "gridPos": { "x": 8, "y": 4, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "percentunit",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 0.05 },
+          { "color": "red", "value": 0.1 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "fasa_error_rate_gauge", "legendFormat": "" }]
+    },
+
+    { "id": 10, "type": "stat", "title": "System Uptime",
+      "gridPos": { "x": 12, "y": 4, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "dthms",
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "system_uptime_seconds", "legendFormat": "" }]
+    },
+
+    { "id": 11, "type": "stat", "title": "Retrieval Quality",
+      "gridPos": { "x": 16, "y": 4, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "percentunit",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "red", "value": null },
+          { "color": "yellow", "value": 0.4 },
+          { "color": "green", "value": 0.65 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "fasa_retrieval_quality_gauge", "legendFormat": "" }]
+    },
+
+    { "id": 12, "type": "stat", "title": "Service Health",
+      "gridPos": { "x": 20, "y": 4, "w": 4, "h": 4 },
+      "options": { "colorMode": "background", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": {
+        "mappings": [{ "type": "value", "options": {
+          "0": { "text": "DEGRADED", "color": "red", "index": 0 },
+          "1": { "text": "HEALTHY",  "color": "green", "index": 1 }
+        }}],
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "red", "value": null },
+          { "color": "green", "value": 1 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "clamp_max(fasa_requests_total >= bool 0, 1)", "legendFormat": "" }]
+    },
+
+    { "id": 20, "type": "timeseries", "title": "Request Throughput (req/min)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" },
+        "custom": { "lineWidth": 2, "fillOpacity": 15, "gradientMode": "opacity" },
+        "unit": "reqps" }},
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "rate(fasa_requests_total{status='ok'}[1m]) * 60",
+          "legendFormat": "✓ success" },
+        { "datasource": "Prometheus",
+          "expr": "rate(fasa_requests_total{status='error'}[1m]) * 60",
+          "legendFormat": "✗ errors" }
+      ]
+    },
+
+    { "id": 21, "type": "timeseries", "title": "API Latency — p50 / p95 / p99 (ms)",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ms",
+        "custom": { "lineWidth": 2, "fillOpacity": 8 }}},
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.50, rate(fasa_request_latency_seconds_bucket[5m])) * 1000",
+          "legendFormat": "p50" },
+        { "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.95, rate(fasa_request_latency_seconds_bucket[5m])) * 1000",
+          "legendFormat": "p95" },
+        { "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.99, rate(fasa_request_latency_seconds_bucket[5m])) * 1000",
+          "legendFormat": "p99" }
+      ]
+    },
+
+    { "id": 30, "type": "heatmap", "title": "API Latency Heatmap (request duration distribution)",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 10 },
+      "options": {
+        "calculate": false,
+        "yAxis": { "unit": "ms", "decimals": 0 },
+        "color": { "mode": "scheme", "scheme": "Spectral", "fill": "dark-orange", "exponent": 0.5 },
+        "tooltip": { "show": true, "yHistogram": true },
+        "legend": { "show": true },
+        "exemplars": { "color": "rgba(255,255,120,0.7)" },
+        "cellGap": 1,
+        "cellRadius": 0
+      },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "scaleDistribution": { "type": "linear" } } } },
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "sum(rate(fasa_request_latency_seconds_bucket[1m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap" }
+      ]
+    },
+
+    { "id": 31, "type": "heatmap", "title": "LLM Latency Heatmap (TinyLlama generation duration)",
+      "gridPos": { "x": 0, "y": 26, "w": 24, "h": 10 },
+      "options": {
+        "calculate": false,
+        "yAxis": { "unit": "ms", "decimals": 0 },
+        "color": { "mode": "scheme", "scheme": "RdYlGn", "fill": "dark-purple", "exponent": 0.5,
+          "min": 0, "steps": 128 },
+        "tooltip": { "show": true, "yHistogram": true },
+        "legend": { "show": true },
+        "cellGap": 1,
+        "cellRadius": 0
+      },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "sum(rate(fasa_llm_latency_seconds_bucket[1m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap" }
+      ]
+    },
+
+    { "id": 22, "type": "timeseries", "title": "LLM Backend Latency — p50 / p95 (ms)",
+      "gridPos": { "x": 0, "y": 36, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ms",
+        "custom": { "lineWidth": 2, "fillOpacity": 10 }}},
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.50, rate(fasa_llm_latency_seconds_bucket[5m])) * 1000",
+          "legendFormat": "{{backend}} p50" },
+        { "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.95, rate(fasa_llm_latency_seconds_bucket[5m])) * 1000",
+          "legendFormat": "{{backend}} p95" }
+      ]
+    },
+
+    { "id": 23, "type": "piechart", "title": "Policy Distribution",
+      "gridPos": { "x": 12, "y": 36, "w": 6, "h": 8 },
+      "options": { "pieType": "donut",
+        "legend": { "displayMode": "table", "placement": "right" },
+        "tooltip": { "mode": "single" } },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" },
+        "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "confident" }, "properties": [{ "id": "color", "value": { "fixedColor": "#4ade80", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "hedge" },     "properties": [{ "id": "color", "value": { "fixedColor": "#fbbf24", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "re_search" }, "properties": [{ "id": "color", "value": { "fixedColor": "#f87171", "mode": "fixed" } }] }
+        ]},
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "sum by(policy) (fasa_requests_total)",
+          "legendFormat": "{{policy}}" }
+      ]
+    },
+
+    { "id": 24, "type": "piechart", "title": "LLM Calls by Backend",
+      "gridPos": { "x": 18, "y": 36, "w": 6, "h": 8 },
+      "options": { "pieType": "donut",
+        "legend": { "displayMode": "table", "placement": "right" },
+        "tooltip": { "mode": "single" } },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "sum by(backend) (fasa_llm_calls_total)",
+          "legendFormat": "{{backend}}" }
+      ]
+    },
+
+    { "id": 40, "type": "timeseries", "title": "LLM Call Rate by Backend (calls/min)",
+      "gridPos": { "x": 0, "y": 44, "w": 12, "h": 7 },
+      "fieldConfig": { "defaults": {
+        "custom": { "lineWidth": 2, "fillOpacity": 12 } }},
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "rate(fasa_llm_calls_total{status='ok'}[2m]) * 60",
+          "legendFormat": "{{backend}} ok" },
+        { "datasource": "Prometheus",
+          "expr": "rate(fasa_llm_calls_total{status='error'}[2m]) * 60",
+          "legendFormat": "{{backend}} error" }
+      ]
+    },
+
+    { "id": 41, "type": "timeseries", "title": "LLM Success vs Error Rate",
+      "gridPos": { "x": 12, "y": 44, "w": 12, "h": 7 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1,
+        "custom": { "lineWidth": 2, "fillOpacity": 10 }}},
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "rate(fasa_llm_calls_total{status='ok'}[5m]) / rate(fasa_llm_calls_total[5m])",
+          "legendFormat": "success rate" },
+        { "datasource": "Prometheus",
+          "expr": "rate(fasa_llm_calls_total{status='error'}[5m]) / rate(fasa_llm_calls_total[5m])",
+          "legendFormat": "error rate" }
+      ]
+    },
+
+    { "id": 25, "type": "timeseries", "title": "CPU & Memory %",
+      "gridPos": { "x": 0, "y": 51, "w": 12, "h": 7 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "custom": { "lineWidth": 2, "fillOpacity": 12 }}},
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": "Prometheus", "expr": "system_cpu_percent",    "legendFormat": "CPU %" },
+        { "datasource": "Prometheus", "expr": "system_memory_percent", "legendFormat": "Memory %" }
+      ]
+    },
+
+    { "id": 26, "type": "timeseries", "title": "Confidence & Error Rate Over Time",
+      "gridPos": { "x": 12, "y": 51, "w": 12, "h": 7 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1,
+        "custom": { "lineWidth": 2, "fillOpacity": 10 }}},
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": "Prometheus",
+          "expr": "fasa_confidence_gauge", "legendFormat": "Avg Confidence" },
+        { "datasource": "Prometheus",
+          "expr": "fasa_error_rate_gauge", "legendFormat": "Error Rate" }
+      ]
+    },
+
+    { "id": 50, "type": "gauge", "title": "Memory Used (GB)",
+      "gridPos": { "x": 0, "y": 58, "w": 6, "h": 5 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "fieldConfig": { "defaults": { "unit": "decgbytes", "min": 0,
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 4 },
+          { "color": "red", "value": 6 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus", "expr": "system_memory_used_gb", "legendFormat": "" }]
+    },
+
+    { "id": 51, "type": "gauge", "title": "Disk Used %",
+      "gridPos": { "x": 6, "y": 58, "w": 6, "h": 5 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 70 },
+          { "color": "red", "value": 90 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus", "expr": "system_disk_percent", "legendFormat": "" }]
+    },
+
+    { "id": 52, "type": "stat", "title": "Total LLM Calls",
+      "gridPos": { "x": 12, "y": 58, "w": 4, "h": 5 },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "sum(fasa_llm_calls_total)", "legendFormat": "" }]
+    },
+
+    { "id": 53, "type": "stat", "title": "LLM Avg Latency (ms)",
+      "gridPos": { "x": 16, "y": 58, "w": 4, "h": 5 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0, "displayName": "ms",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null },
+          { "color": "yellow", "value": 10000 },
+          { "color": "red", "value": 30000 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus",
+        "expr": "rate(fasa_llm_latency_seconds_sum[5m]) / rate(fasa_llm_latency_seconds_count[5m]) * 1000",
+        "legendFormat": "" }]
+    },
+
+    { "id": 54, "type": "stat", "title": "Disk Free (GB)",
+      "gridPos": { "x": 20, "y": 58, "w": 4, "h": 5 },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "decgbytes",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "red", "value": null },
+          { "color": "yellow", "value": 10 },
+          { "color": "green", "value": 50 }
+        ]}}},
+      "targets": [{ "datasource": "Prometheus", "expr": "system_disk_free_gb", "legendFormat": "" }]
+    }
+
+  ]
+}

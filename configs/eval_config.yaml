@@ -1,0 +1,15 @@
+test_data: ./data/ambiguous_test_set.parquet
+results_dir: ./results
+num_queries: 50
+k_rollouts: 1
+conditions:
+  - baseline
+  - dpo_full
+  - dpo_full_adk
+
+metrics:
+  ece_bins: 10
+  high_confidence_threshold: 0.7
+  low_retrieval_threshold: 0.5
+
+seed: 42

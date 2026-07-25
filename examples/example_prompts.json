@@ -1,0 +1,19 @@
+{
+  "examples": [
+    {
+      "id": "multi_hop",
+      "query": "What is the capital of the country where the Eiffel Tower is located?",
+      "notes": "Multi-hop ambiguity — requires chaining France → Paris"
+    },
+    {
+      "id": "conflicting",
+      "query": "When was the first iPhone released?",
+      "notes": "Near-miss / temporal — watch for conflicting release dates in snippets"
+    },
+    {
+      "id": "low_evidence",
+      "query": "What drug treats both malaria and lupus?",
+      "notes": "Conflicting sources — agent should hedge or re-search"
+    }
+  ]
+}

@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SENTIENT CONTROL | Failure-Aware Search Agents</title>
+<meta name="description" content="DPO-trained AI search agents with calibrated uncertainty — confident, hedge, or re-search."/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+  darkMode:"class",
+  theme:{
+    extend:{
+      colors:{
+        "surface-container-lowest":"#0b0e17",
+        "surface-dim":"#10131d",
+        "primary-fixed":"#d8e2ff",
+        "on-error":"#690005",
+        "secondary-container":"#4f319c",
+        "border-slate":"#2e3345",
+        "surface-container-low":"#181b25",
+        "surface-container":"#1c1f29",
+        "surface-container-high":"#272a34",
+        "surface-container-highest":"#31343f",
+        "surface-bright":"#363944",
+        "surface-variant":"#31343f",
+        "on-surface":"#e0e2f0",
+        "on-surface-variant":"#c3c6d4",
+        "inverse-surface":"#e0e2f0",
+        "outline":"#8c909e",
+        "outline-variant":"#424752",
+        "background":"#10131d",
+        "surface":"#10131d",
+        "primary":"#aec6ff",
+        "primary-container":"#6c9eff",
+        "on-primary":"#002e6a",
+        "on-primary-container":"#003476",
+        "secondary":"#cebdff",
+        "on-secondary":"#381385",
+        "on-secondary-container":"#bea8ff",
+        "tertiary":"#fcbb36",
+        "tertiary-container":"#d09500",
+        "on-tertiary":"#422d00",
+        "tertiary-fixed":"#ffdea8",
+        "tertiary-fixed-dim":"#fcbb36",
+        "error":"#ffb4ab",
+        "error-container":"#93000a",
+        "on-error-container":"#ffdad6",
+        "bg-void":"#0f1117",
+        "text-glace":"#e8eaef",
+        "text-dim":"#8b92a8",
+        "amber-warning":"#fbbf24",
+        "emerald-success":"#4ade80",
+        "ruby-error":"#f87171",
+        "violet-accent":"#a78bfa",
+        "cyan-info":"#06b6d4",
+        "indigo-base":"#6366f1",
+      },
+      fontFamily:{
+        "display":["Hanken Grotesk","system-ui","sans-serif"],
+        "body":["Hanken Grotesk","system-ui","sans-serif"],
+        "mono":["JetBrains Mono","monospace"],
+      },
+      animation:{
+        "pulse-slow":"pulse 3s cubic-bezier(0.4,0,0.6,1) infinite",
+        "float-slow":"float 18s ease-in-out infinite alternate",
+        "float-med":"float 14s ease-in-out infinite alternate",
+        "spin-slow":"spin 0.7s linear infinite",
+      },
+      keyframes:{
+        float:{"from":{"transform":"translate(0,0) scale(1)"},"to":{"transform":"translate(40px,30px) scale(1.08)"}},
+      },
+    }
+  }
+}
+</script>
+<style>
+*{box-sizing:border-box}
+body{font-family:"Hanken Grotesk",system-ui,sans-serif;min-height:100vh}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24;font-size:20px;line-height:1}
+.glass{background:rgba(28,31,41,0.75);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.glass-card{background:rgba(22,25,35,0.8);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid #2e3345}
+.aurora-blob{position:absolute;border-radius:50%;filter:blur(130px);pointer-events:none}
+.ab1{width:650px;height:650px;background:radial-gradient(circle,#4f319c,#6366f1);top:-200px;left:-180px;opacity:.22;animation:float 18s ease-in-out infinite alternate}
+.ab2{width:500px;height:500px;background:radial-gradient(circle,#06b6d4,#3b82f6);top:35%;right:-120px;opacity:.18;animation:float 14s ease-in-out infinite alternate;animation-delay:-6s}
+.ab3{width:350px;height:350px;background:radial-gradient(circle,#8b5cf6,#ec4899);bottom:-80px;left:40%;opacity:.2;animation:float 20s ease-in-out infinite alternate;animation-delay:-11s}
+@keyframes float{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,28px) scale(1.08)}}
+.grid-overlay{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(99,102,241,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.035) 1px,transparent 1px);
+  background-size:52px 52px}
+.pulse-live{animation:pulse-ring 2.2s cubic-bezier(.4,0,.6,1) infinite}
+@keyframes pulse-ring{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(74,222,128,.5)}50%{opacity:.6;box-shadow:0 0 0 6px transparent}}
+.tab-active{background:rgba(99,102,241,.15);color:#aec6ff;border-color:rgba(99,102,241,.4)}
+.nav-link{transition:color .2s,border-color .2s}
+.nav-link.active{color:#aec6ff;border-bottom:2px solid #aec6ff}
+.conf-bar{transition:width 1s cubic-bezier(.4,0,.2,1)}
+.result-in{animation:fadein .4s ease forwards}
+@keyframes fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.ldot{width:5px;height:5px;border-radius:50%;background:#2e3345;animation:ldot 1.4s ease-in-out infinite}
+.ldot:nth-child(2){animation-delay:.2s}.ldot:nth-child(3){animation-delay:.4s}
+@keyframes ldot{0%,80%,100%{background:#2e3345}40%{background:#6c9eff}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0f1117}::-webkit-scrollbar-thumb{background:#2e3345;border-radius:3px}
+.page{display:none}.page.active{display:block;animation:fadein .3s ease}
+.chip:hover{border-color:#6c9eff;color:#aec6ff;background:rgba(99,102,241,.1)}
+.chip{transition:all .2s}
+.agent-modal-backdrop{background:rgba(0,0,0,.65);backdrop-filter:blur(4px)}
+.agent-section pre{white-space:pre-wrap;word-break:break-word;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.6;color:#c3c6d4}
+.line-clamp-3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.eye-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid #2e3345;background:#1c1f29;color:#8b92a8;transition:all .2s;cursor:pointer}
+.eye-btn:hover{color:#aec6ff;border-color:rgba(99,102,241,.5);background:rgba(99,102,241,.12)}
+</style>
+</head>
+<body class="bg-bg-void text-on-surface font-body">
+
+<!-- Aurora -->
+<div class="fixed inset-0 overflow-hidden z-0 pointer-events-none">
+  <div class="aurora-blob ab1"></div>
+  <div class="aurora-blob ab2"></div>
+  <div class="aurora-blob ab3"></div>
+</div>
+<div class="grid-overlay"></div>
+
+<!-- ═══════════════════ TOP APP BAR ═══════════════════ -->
+<header class="fixed top-0 w-full z-50 glass border-b border-border-slate shadow-lg">
+  <div class="flex justify-between items-center h-16 px-8 max-w-[1440px] mx-auto">
+    <!-- Brand -->
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-base to-violet-accent flex items-center justify-center shadow-lg shadow-indigo-base/30 text-white text-sm font-bold flex-shrink-0">⚡</div>
+        <span class="font-display font-bold tracking-tight text-primary text-lg hidden sm:block">SENTIENT CONTROL</span>
+      </div>
+      <div class="flex items-center gap-2 bg-surface-container-highest/50 px-3 py-1 rounded-full border border-border-slate">
+        <span class="w-2 h-2 rounded-full bg-emerald-success pulse-live inline-block"></span>
+        <span class="font-mono text-[10px] tracking-widest text-emerald-success font-medium uppercase">System Live</span>
+      </div>
+    </div>
+    <!-- Nav -->
+    <nav class="flex items-center gap-1">
+      <button onclick="switchTab('search',this)" id="tab-search"
+        class="tab-active px-4 py-2 rounded-lg border border-transparent font-body text-sm font-medium transition-all">
+        <span class="material-symbols-outlined align-middle mr-1">search</span>Query Agent
+      </button>
+      <button onclick="switchTab('dashboard',this)" id="tab-dashboard"
+        class="px-4 py-2 rounded-lg border border-transparent text-text-dim font-body text-sm font-medium transition-all hover:text-on-surface hover:border-border-slate">
+        <span class="material-symbols-outlined align-middle mr-1">monitoring</span>Dashboard
+      </button>
+      <button onclick="switchTab('metrics',this)" id="tab-metrics"
+        class="px-4 py-2 rounded-lg border border-transparent text-text-dim font-body text-sm font-medium transition-all hover:text-on-surface hover:border-border-slate">
+        <span class="material-symbols-outlined align-middle mr-1">bar_chart_4_bars</span>Metrics
+      </button>
+    </nav>
+    <!-- Right -->
+    <div class="flex items-center gap-3">
+      <button onclick="window.open('/docs','_blank')" class="text-text-dim hover:text-primary transition-colors">
+        <span class="material-symbols-outlined">description</span>
+      </button>
+      <button onclick="window.open('https://github.com/karthikj30/Failure-Aware-Search-Agents','_blank')" class="text-text-dim hover:text-primary transition-colors">
+        <span class="material-symbols-outlined">code</span>
+      </button>
+      <span class="font-mono text-[11px] text-text-dim hidden md:block">:8080</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════ CONTENT ═══════════════════ -->
+<div class="relative z-10 pt-16 min-h-screen">
+
+<!-- ─────── SEARCH PAGE ─────── -->
+<div class="page active" id="page-search">
+  <div class="max-w-[860px] mx-auto px-6 py-14">
+
+    <!-- Hero -->
+    <div class="mb-10">
+      <div class="inline-flex items-center gap-2 bg-surface-container border border-border-slate rounded-full px-4 py-1.5 mb-5">
+        <span class="text-primary font-mono text-[10px] tracking-widest font-medium uppercase">✦ DPO-Trained · Calibrated Uncertainty</span>
+      </div>
+      <h1 class="font-display font-bold text-[clamp(32px,5vw,52px)] leading-[1.1] tracking-tight mb-4">
+        <span class="bg-gradient-to-r from-text-glace via-primary to-cyan-info bg-clip-text text-transparent">Failure-Aware<br/>Search Agents</span>
+      </h1>
+      <p class="text-text-dim text-[15px] leading-relaxed max-w-lg mb-6">Post-trained LLM agents that express calibrated uncertainty instead of hallucinating — powered by Direct Preference Optimization.</p>
+      <div class="flex gap-2.5 flex-wrap">
+        <span class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-emerald-success border border-emerald-success/30 bg-emerald-success/8 text-xs font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-success"></span>Confident · 70–90%
+        </span>
+        <span class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-amber-warning border border-amber-warning/30 bg-amber-warning/8 text-xs font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-warning"></span>Hedge · 40–65%
+        </span>
+        <span class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-ruby-error border border-ruby-error/30 bg-ruby-error/8 text-xs font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-ruby-error"></span>Re-Search · &lt;40%
+        </span>
+      </div>
+    </div>
+
+    <!-- Search card -->
+    <div id="searchCard" class="glass-card rounded-2xl p-7 mb-7 transition-shadow duration-300">
+      <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">Ask anything</p>
+      <div class="flex gap-3">
+        <select id="searchMode" class="bg-bg-void/70 border border-border-slate rounded-xl px-4 py-3.5 text-sm font-body text-on-surface outline-none transition-all focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 cursor-pointer">
+          <option value="general">General Mode</option>
+          <option value="medical">Medical Mode</option>
+          <option value="legal">Legal Mode</option>
+          <option value="finance">Finance Mode</option>
+          <option value="research">Research Mode</option>
+        </select>
+        <input id="queryInput" type="text" maxlength="500" autocomplete="off"
+          placeholder="e.g. What drug treats both malaria and lupus?"
+          class="flex-1 bg-bg-void/70 border border-border-slate rounded-xl px-5 py-3.5 text-[15px] font-body text-on-surface placeholder-text-dim outline-none transition-all focus:border-primary-container focus:ring-2 focus:ring-primary-container/20"
+          onkeydown="if(event.key==='Enter')submitQuery()"/>
+        <button id="submitBtn" onclick="submitQuery()"
+          class="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-indigo-base to-violet-accent text-white rounded-xl font-semibold text-sm transition-all hover:opacity-90 hover:-translate-y-px hover:shadow-xl hover:shadow-indigo-base/40 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shadow-lg shadow-indigo-base/25">
+          <span id="btnIcon" class="text-base transition-transform duration-300">⚡</span> Search
+        </button>
+      </div>
+      <div class="mt-4 flex items-center justify-between flex-wrap gap-4">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-text-dim text-xs">Try:</span>
+          <button class="chip text-xs px-3 py-1 bg-surface-container border border-border-slate rounded-full text-text-dim font-body" onclick="fill(this)">Capital of France?</button>
+          <button class="chip text-xs px-3 py-1 bg-surface-container border border-border-slate rounded-full text-text-dim font-body" onclick="fill(this)">Who invented the telephone?</button>
+          <button class="chip text-xs px-3 py-1 bg-surface-container border border-border-slate rounded-full text-text-dim font-body" onclick="fill(this)">Malaria and lupus drug?</button>
+          <button class="chip text-xs px-3 py-1 bg-surface-container border border-border-slate rounded-full text-text-dim font-body" onclick="fill(this)">Speed of light?</button>
+          <button class="chip text-xs px-3 py-1 bg-surface-container border border-border-slate rounded-full text-text-dim font-body" onclick="fill(this)">President after JFK?</button>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer group">
+          <input type="checkbox" id="useVotingToggle" class="hidden">
+          <div class="w-9 h-5 flex items-center px-0.5 bg-surface-container rounded-full border border-border-slate relative transition-colors group-hover:border-primary-container">
+            <div id="votingToggleKnob" class="w-3.5 h-3.5 bg-text-dim rounded-full transition-transform"></div>
+          </div>
+          <span class="text-xs font-mono text-text-dim uppercase tracking-widest group-hover:text-primary transition-colors">Multi-Agent Voting</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="errBox" class="hidden bg-ruby-error/8 border border-ruby-error/30 rounded-xl px-5 py-3.5 text-ruby-error text-sm mb-6"></div>
+
+    <!-- Loader -->
+    <div id="loader" class="hidden items-center gap-4 py-8">
+      <div class="w-9 h-9 rounded-full border-2 border-border-slate border-t-primary-container animate-spin"></div>
+      <div>
+        <p class="text-sm text-text-dim">Running agent pipeline…</p>
+        <div class="flex gap-1.5 mt-1.5"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="result" class="hidden result-in">
+      <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest">Agent Response</p>
+        <span id="policyBadge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold border"></span>
+      </div>
+      <!-- Confidence bar -->
+      <div class="flex items-center gap-4 mb-6">
+        <span class="font-mono text-[11px] text-text-dim min-w-[80px]">Confidence</span>
+        <div class="flex-1 h-1.5 bg-surface-container rounded-full overflow-hidden">
+          <div id="confFill" class="conf-bar h-full rounded-full w-0"></div>
+        </div>
+        <span id="confPct" class="font-mono text-sm font-bold min-w-[42px] text-right"></span>
+      </div>
+      <!-- Answer -->
+      <div id="respText" class="glass-card rounded-2xl p-6 text-[15px] leading-[1.9] whitespace-pre-wrap break-words mb-6"></div>
+      
+      <!-- Failure Reason Panel (Why Hedge?) -->
+      <div id="failurePanel" class="hidden glass-card rounded-2xl p-6 mb-6 border border-border-slate">
+        <p id="failurePanelTitle" class="font-display font-bold text-lg mb-4 text-on-surface">Why Hedge?</p>
+        <div id="failureList" class="flex flex-col gap-3"></div>
+      </div>
+
+      <!-- Pipeline cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="glass-card rounded-xl p-4 hover:-translate-y-1 hover:border-primary-container/50 transition-all">
+          <div class="flex items-center justify-between mb-2.5">
+            <p class="flex items-center gap-2 font-mono text-[10px] text-text-dim uppercase tracking-widest"><span class="material-symbols-outlined text-base">search</span>Search Agent</p>
+            <button type="button" class="eye-btn" title="View search agent response" onclick="openAgentModalFromLive()"><span class="material-symbols-outlined text-base">visibility</span></button>
+          </div>
+          <p class="font-mono text-[12px] text-on-surface leading-relaxed line-clamp-3" id="pSearch">—</p>
+          <p class="font-mono text-[10px] text-text-dim mt-2" id="pSearchMeta">—</p>
+        </div>
+        <div class="glass-card rounded-xl p-4 hover:-translate-y-1 hover:border-primary-container/50 transition-all">
+          <div class="flex items-center justify-between mb-2.5">
+            <p class="flex items-center gap-2 font-mono text-[10px] text-text-dim uppercase tracking-widest"><span class="material-symbols-outlined text-base">verified</span>Verification Agent</p>
+            <button type="button" class="eye-btn" title="View verification agent response" onclick="openAgentModalFromLive()"><span class="material-symbols-outlined text-base">visibility</span></button>
+          </div>
+          <p class="font-mono text-[12px] text-on-surface leading-relaxed line-clamp-3" id="pVerify">—</p>
+          <p class="font-mono text-[10px] text-text-dim mt-2" id="pVerifyMeta">—</p>
+        </div>
+        <div class="glass-card rounded-xl p-4 hover:-translate-y-1 hover:border-primary-container/50 transition-all">
+          <div class="flex items-center justify-between mb-2.5">
+            <p class="flex items-center gap-2 font-mono text-[10px] text-text-dim uppercase tracking-widest"><span class="material-symbols-outlined text-base">forum</span>Composer Agent</p>
+            <button type="button" class="eye-btn" title="View composer agent response" onclick="openAgentModalFromLive()"><span class="material-symbols-outlined text-base">visibility</span></button>
+          </div>
+          <p class="font-mono text-[12px] text-on-surface leading-relaxed line-clamp-3" id="pComposer">—</p>
+          <p class="font-mono text-[10px] text-text-dim mt-2" id="pComposerMeta">—</p>
+        </div>
+      </div>
+      
+      <!-- Multi-Agent Voting Panel -->
+      <div id="votingPanel" class="hidden mt-6 glass-card rounded-2xl overflow-hidden border border-border-slate">
+        <div class="px-6 py-4 border-b border-border-slate bg-surface-container/40 flex items-center gap-3">
+          <span class="material-symbols-outlined text-cyan-info text-xl">how_to_vote</span>
+          <div>
+            <p class="font-mono text-[10px] text-cyan-info uppercase tracking-widest">Multi-Agent Voting</p>
+            <p class="text-sm font-semibold text-on-surface">Consensus Verdict Breakdown</p>
+          </div>
+        </div>
+        <div class="p-6">
+          <div class="overflow-x-auto rounded-xl border border-border-slate">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="border-b border-border-slate bg-surface-container/50">
+                  <th class="text-left px-4 py-2.5 font-mono text-[10px] text-text-dim uppercase tracking-widest">Agent</th>
+                  <th class="text-left px-4 py-2.5 font-mono text-[10px] text-text-dim uppercase tracking-widest">Verdict</th>
+                  <th class="text-left px-4 py-2.5 font-mono text-[10px] text-text-dim uppercase tracking-widest">Confidence</th>
+                  <th class="text-left px-4 py-2.5 font-mono text-[10px] text-text-dim uppercase tracking-widest">Weight</th>
+                  <th class="text-left px-4 py-2.5 font-mono text-[10px] text-text-dim uppercase tracking-widest">Reasoning</th>
+                </tr>
+              </thead>
+              <tbody id="votingTbody" class="divide-y divide-border-slate/40"></tbody>
+            </table>
+          </div>
+          <div class="mt-4 flex items-center justify-between px-4 py-3 bg-surface-container-highest rounded-lg border border-border-slate/50">
+            <span class="font-bold text-sm text-on-surface">Weighted Consensus: <span id="voteFinalVerdict" class="text-primary uppercase tracking-widest text-xs ml-2"></span></span>
+            <span class="font-mono text-xs text-text-dim">Score: <span id="voteFinalScore" class="text-on-surface font-bold"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Explainability Card ─────────────────────────────────────── -->
+      <div id="explainCard" class="hidden mt-6 glass-card rounded-2xl overflow-hidden border border-border-slate">
+        <div class="flex items-center gap-3 px-6 py-4 border-b border-border-slate bg-surface-container/40">
+          <span class="material-symbols-outlined text-violet-accent text-xl">analytics</span>
+          <div>
+            <p class="font-mono text-[10px] text-violet-accent uppercase tracking-widest">AI Transparency Layer</p>
+            <p class="text-sm font-semibold text-on-surface">Why did the AI respond this way?</p>
+          </div>
+          <button onclick="toggleExplain()" class="ml-auto text-text-dim hover:text-primary transition-colors" id="explainToggle" title="Collapse">
+            <span class="material-symbols-outlined text-lg">expand_less</span>
+          </button>
+        </div>
+        <div id="explainBody" class="p-6 space-y-6">
+          <div>
+            <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">Reasoning Factors</p>
+            <div id="factorChips" class="flex flex-col gap-2"></div>
+          </div>
+          <div>
+            <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Confidence Breakdown</p>
+            <p class="text-[10px] text-text-dim/60 font-mono mb-3">SHAP-style contribution breakdown</p>
+            
+            <div class="rounded-xl bg-surface-container border border-border-slate overflow-hidden font-mono text-[11px]">
+              <div class="px-4 py-3 flex items-center justify-between border-b border-border-slate/50 hover:bg-white/5 transition-colors">
+                <span class="text-primary w-28">Retrieval Score</span>
+                <div class="flex-1 mx-4 h-1.5 bg-bg-void/50 rounded-full overflow-hidden flex">
+                  <div id="shapRetrieval" class="h-full bg-primary" style="width: 0%"></div>
+                </div>
+                <span id="shapRetrievalVal" class="w-10 text-right text-on-surface font-semibold">—</span>
+              </div>
+              <div class="px-4 py-3 flex items-center justify-between border-b border-border-slate/50 hover:bg-white/5 transition-colors">
+                <span class="text-cyan-info w-28">Verification</span>
+                <div class="flex-1 mx-4 h-1.5 bg-bg-void/50 rounded-full overflow-hidden flex">
+                  <div id="shapVerification" class="h-full bg-cyan-info" style="width: 0%"></div>
+                </div>
+                <span id="shapVerificationVal" class="w-10 text-right text-on-surface font-semibold">—</span>
+              </div>
+              <div class="px-4 py-3 flex items-center justify-between border-b border-border-slate/50 hover:bg-white/5 transition-colors">
+                <span class="text-emerald-success w-28">Source Trust</span>
+                <div class="flex-1 mx-4 h-1.5 bg-bg-void/50 rounded-full overflow-hidden flex">
+                  <div id="shapTrust" class="h-full bg-emerald-success" style="width: 0%"></div>
+                </div>
+                <span id="shapTrustVal" class="w-10 text-right text-on-surface font-semibold">—</span>
+              </div>
+              <div class="px-4 py-3 flex items-center justify-between border-b border-border-slate/50 hover:bg-white/5 transition-colors">
+                <span class="text-ruby-error w-28">Conflict Penalty</span>
+                <div class="flex-1 mx-4 h-1.5 bg-bg-void/50 rounded-full overflow-hidden flex justify-end">
+                  <div id="shapConflict" class="h-full bg-ruby-error" style="width: 0%"></div>
+                </div>
+                <span id="shapConflictVal" class="w-10 text-right text-ruby-error font-semibold">—</span>
+              </div>
+              <div class="px-4 py-3.5 bg-surface-container-highest flex items-center justify-between">
+                <span class="text-on-surface font-bold text-xs">Final Confidence</span>
+                <span id="shapFinal" class="text-on-surface font-bold text-sm bg-bg-void/50 px-2 py-0.5 rounded">—</span>
+              </div>
+            </div>
+            <p id="formulaText" class="font-mono text-[10px] text-text-dim/60 mt-2 text-right"></p>
+          </div>
+          <div class="rounded-xl bg-surface-container border border-border-slate px-5 py-4">
+            <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-2">Why this policy?</p>
+            <p id="policyReasonText" class="text-sm text-on-surface leading-relaxed"></p>
+          </div>
+          <div id="sourceTrustSection" class="hidden">
+            <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">Source Reliability Scores</p>
+            <div class="overflow-x-auto rounded-xl border border-border-slate">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="border-b border-border-slate bg-surface-container/50">
+                    <th class="text-left px-4 py-2.5 font-mono text-[10px] text-text-dim uppercase tracking-widest">Domain</th>
+                    <th class="text-left px-4 py-2.5 font-mono text-[10px] text-text-dim uppercase tracking-widest">Reliability</th>
+                    <th class="text-left px-4 py-2.5 font-mono text-[10px] text-text-dim uppercase tracking-widest">Tier</th>
+                    <th class="text-left px-4 py-2.5 font-mono text-[10px] text-text-dim uppercase tracking-widest">URL</th>
+                  </tr>
+                </thead>
+                <tbody id="sourceTrustBody" class="divide-y divide-border-slate/40"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="historyPanel" class="hidden mt-10">
+      <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">Recent queries</p>
+      <div id="histList" class="flex flex-col gap-2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────── DASHBOARD PAGE ─────── -->
+<div class="page" id="page-dashboard">
+  <div class="max-w-[1400px] mx-auto px-6 py-10">
+
+    <!-- Header row -->
+    <div class="flex items-start justify-between mb-8 flex-wrap gap-4">
+      <div>
+        <div class="inline-flex items-center gap-2 bg-surface-container border border-border-slate rounded-full px-4 py-1.5 mb-3">
+          <span class="font-mono text-[10px] tracking-widest text-primary uppercase">📡 Live Monitoring</span>
+        </div>
+        <h2 class="font-display font-bold text-3xl tracking-tight text-on-surface mb-1">LLM Observability</h2>
+        <p class="text-text-dim text-sm">Real-time inference metrics, policy distribution, latency trends and per-backend LLM call logs.</p>
+      </div>
+      <div class="flex items-center gap-3 mt-2">
+        <div class="flex items-center gap-2 text-sm text-emerald-success">
+          <span class="w-2 h-2 rounded-full bg-emerald-success pulse-live"></span> Live · 15s refresh
+        </div>
+        <span id="lastUpdated" class="text-text-dim text-xs font-mono hidden sm:block">—</span>
+        <button onclick="loadDashboard()" class="flex items-center gap-1.5 px-4 py-1.5 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary hover:border-primary-container/50 text-sm transition-all font-body">
+          <span class="material-symbols-outlined text-base">refresh</span> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Metric cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="metricsGrid">
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-primary-container mb-3 block">query_stats</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Total Queries</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mTotal">—</p>
+        <p class="text-text-dim text-xs mt-1">since server start</p>
+      </div>
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-tertiary mb-3 block">timer</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Avg Latency</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mLatency">—</p>
+        <p class="text-text-dim text-xs mt-1">ms end-to-end</p>
+      </div>
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-emerald-success mb-3 block">target</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Avg Confidence</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mConf">—</p>
+        <p class="text-text-dim text-xs mt-1">composer output</p>
+      </div>
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-ruby-error mb-3 block">warning</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Error Rate</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mErr">—</p>
+        <p class="text-text-dim text-xs mt-1" id="mErrCount">errors</p>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+      <div class="glass-card rounded-2xl p-5">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-5">Policy Distribution</p>
+        <div class="relative h-56"><canvas id="policyChart"></canvas></div>
+      </div>
+      <div class="glass-card rounded-2xl p-5">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-5">Query Latency · 5-min buckets (ms)</p>
+        <div class="relative h-56"><canvas id="latencyChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- LLM Backends summary -->
+    <div class="glass-card rounded-2xl p-5 mb-6" id="backendSummary"></div>
+
+    <!-- Queries table -->
+    <div class="glass-card rounded-2xl overflow-hidden mb-5">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-border-slate">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest">Recent Queries</p>
+        <button onclick="loadDashboard()" class="flex items-center gap-1 px-3 py-1 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary text-xs transition-all font-body">
+          <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-border-slate">
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Time</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Query</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Policy</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Confidence</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Latency</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Retrieval</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Answer</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Status</th>
+            <th class="text-center px-3 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest w-12">View</th>
+          </tr></thead>
+          <tbody id="queryTbody" class="divide-y divide-border-slate/50"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LLM calls table -->
+    <div class="glass-card rounded-2xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-slate">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest">LLM Calls · Per Backend</p>
+        <p class="text-text-dim text-xs mt-1.5">Offline rollouts (<code class="font-mono text-primary">context=rollout</code>) populate this table. Live <code class="font-mono">/query</code> uses heuristics unless <code class="font-mono">INFERENCE_BACKEND=ollama</code>.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-border-slate">
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Time</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Backend</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Agent</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Model</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Context</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Latency</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Prompt</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Response</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Status</th>
+          </tr></thead>
+          <tbody id="llmTbody" class="divide-y divide-border-slate/50"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ DASHBOARD PAGE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ -->
+<div class="page" id="page-dashboard">
+  <div class="max-w-[1400px] mx-auto px-6 py-10">
+
+    <!-- Header row -->
+    <div class="flex items-start justify-between mb-8 flex-wrap gap-4">
+      <div>
+        <div class="inline-flex items-center gap-2 bg-surface-container border border-border-slate rounded-full px-4 py-1.5 mb-3">
+          <span class="font-mono text-[10px] tracking-widest text-primary uppercase">≡ƒôí Live Monitoring</span>
+        </div>
+        <h2 class="font-display font-bold text-3xl tracking-tight text-on-surface mb-1">LLM Observability</h2>
+        <p class="text-text-dim text-sm">Real-time inference metrics, policy distribution, latency trends and per-backend LLM call logs.</p>
+      </div>
+      <div class="flex items-center gap-3 mt-2">
+        <div class="flex items-center gap-2 text-sm text-emerald-success">
+          <span class="w-2 h-2 rounded-full bg-emerald-success pulse-live"></span> Live ┬╖ 15s refresh
+        </div>
+        <span id="lastUpdated" class="text-text-dim text-xs font-mono hidden sm:block">ΓÇö</span>
+        <button onclick="loadDashboard()" class="flex items-center gap-1.5 px-4 py-1.5 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary hover:border-primary-container/50 text-sm transition-all font-body">
+          <span class="material-symbols-outlined text-base">refresh</span> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Metric cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="metricsGrid">
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-primary-container mb-3 block">query_stats</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Total Queries</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mTotal">ΓÇö</p>
+        <p class="text-text-dim text-xs mt-1">since server start</p>
+      </div>
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-tertiary mb-3 block">timer</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Avg Latency</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mLatency">ΓÇö</p>
+        <p class="text-text-dim text-xs mt-1">ms end-to-end</p>
+      </div>
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-emerald-success mb-3 block">target</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Avg Confidence</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mConf">ΓÇö</p>
+        <p class="text-text-dim text-xs mt-1">composer output</p>
+      </div>
+      <div class="glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all">
+        <span class="material-symbols-outlined text-ruby-error mb-3 block">warning</span>
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1">Error Rate</p>
+        <p class="font-display text-3xl font-bold text-on-surface" id="mErr">ΓÇö</p>
+        <p class="text-text-dim text-xs mt-1" id="mErrCount">errors</p>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+      <div class="glass-card rounded-2xl p-5">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-5">Policy Distribution</p>
+        <div class="relative h-56"><canvas id="policyChart"></canvas></div>
+      </div>
+      <div class="glass-card rounded-2xl p-5">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-5">Query Latency ┬╖ 5-min buckets (ms)</p>
+        <div class="relative h-56"><canvas id="latencyChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- LLM Backends summary -->
+    <div class="glass-card rounded-2xl p-5 mb-6" id="backendSummary"></div>
+
+    <!-- Queries table -->
+    <div class="glass-card rounded-2xl overflow-hidden mb-5">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-border-slate">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest">Recent Queries</p>
+        <button onclick="loadDashboard()" class="flex items-center gap-1 px-3 py-1 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary text-xs transition-all font-body">
+          <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-border-slate">
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Time</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Query</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Policy</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Confidence</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Latency</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Retrieval</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Answer</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Status</th>
+            <th class="text-center px-3 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest w-12">View</th>
+          </tr></thead>
+          <tbody id="queryTbody" class="divide-y divide-border-slate/50"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LLM calls table -->
+    <div class="glass-card rounded-2xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-slate">
+        <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest">LLM Calls ┬╖ Per Backend</p>
+        <p class="text-text-dim text-xs mt-1.5">Offline rollouts (<code class="font-mono text-primary">context=rollout</code>) populate this table. Live <code class="font-mono">/query</code> uses heuristics unless <code class="font-mono">INFERENCE_BACKEND=ollama</code>.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-border-slate">
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Time</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Backend</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Agent</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Model</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Context</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Latency</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Prompt</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Response</th>
+            <th class="text-left px-5 py-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">Status</th>
+          </tr></thead>
+          <tbody id="llmTbody" class="divide-y divide-border-slate/50"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Agent response modal -->
+<div id="agentModal" class="hidden fixed inset-0 z-[100] agent-modal-backdrop flex items-center justify-center p-4" onclick="if(event.target===this)closeAgentModal()">
+  <div class="glass-card rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-border-slate" role="dialog" aria-labelledby="agentModalTitle">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-border-slate shrink-0">
+      <div class="min-w-0 pr-4">
+        <p id="agentModalTitle" class="font-mono text-[10px] text-text-dim uppercase tracking-widest">Agent Pipeline Responses</p>
+        <p id="agentModalQuery" class="text-sm font-semibold text-on-surface mt-1 truncate"></p>
+      </div>
+      <button type="button" onclick="closeAgentModal()" class="eye-btn shrink-0" aria-label="Close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="overflow-y-auto flex-1 min-h-0 p-6 space-y-5">
+      <div class="rounded-xl border border-border-slate bg-surface-container/50 p-4">
+        <p class="flex items-center gap-2 font-mono text-[10px] text-primary uppercase tracking-widest mb-2"><span class="material-symbols-outlined text-sm">search</span>Search Agent <span id="agentModalSearchBadge" class="text-text-dim normal-case"></span></p>
+        <p id="agentModalSearchMeta" class="text-[11px] text-text-dim mb-2"></p>
+        <pre id="agentModalSearch" class="agent-section"></pre>
+        <pre id="agentModalSearchLlm" class="agent-section hidden mt-3 text-cyan-info/80"></pre>
+      </div>
+      <div class="rounded-xl border border-border-slate bg-surface-container/50 p-4">
+        <p class="flex items-center gap-2 font-mono text-[10px] text-cyan-info uppercase tracking-widest mb-2"><span class="material-symbols-outlined text-sm">verified</span>Verification Agent <span id="agentModalVerifyBadge" class="text-text-dim normal-case"></span></p>
+        <p id="agentModalVerifyMeta" class="text-[11px] text-text-dim mb-2"></p>
+        <pre id="agentModalVerify" class="agent-section"></pre>
+        <pre id="agentModalVerifyLlm" class="agent-section hidden mt-3 text-cyan-info/80"></pre>
+      </div>
+      <div class="rounded-xl border border-border-slate bg-surface-container/50 p-4">
+        <p class="flex items-center gap-2 font-mono text-[10px] text-violet-accent uppercase tracking-widest mb-2"><span class="material-symbols-outlined text-sm">psychology</span>Composer Agent <span id="agentModalComposerBadge" class="text-text-dim normal-case"></span></p>
+        <p id="agentModalComposerMeta" class="text-[11px] text-text-dim mb-2"></p>
+        <pre id="agentModalComposer" class="agent-section"></pre>
+        <pre id="agentModalComposerLlm" class="agent-section hidden mt-3 text-cyan-info/80"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────── METRICS PAGE ─────── -->
+<div class="page" id="page-metrics">
+  <div class="max-w-[1440px] mx-auto px-6 py-10">
+
+    <!-- Header -->
+    <div class="flex items-start justify-between mb-8 flex-wrap gap-4">
+      <div>
+        <div class="inline-flex items-center gap-2 bg-surface-container border border-border-slate rounded-full px-4 py-1.5 mb-3">
+          <span class="font-mono text-[10px] tracking-widest text-primary uppercase">⚙ System + Inference Metrics</span>
+        </div>
+        <h2 class="font-display font-bold text-3xl tracking-tight text-on-surface mb-1">Metrics Dashboard</h2>
+        <p class="text-text-dim text-sm">Real-time system health, request telemetry, and LLM inference metrics. Grafana embedded below for historical charts.</p>
+      </div>
+      <div class="flex items-center gap-3 mt-2">
+        <div class="flex items-center gap-2 text-sm text-emerald-success">
+          <span class="w-2 h-2 rounded-full bg-emerald-success pulse-live"></span> Auto-refresh 10s
+        </div>
+        <span id="metricsUpdated" class="text-text-dim text-xs font-mono hidden sm:block">—</span>
+        <button onclick="loadMetrics()" class="flex items-center gap-1.5 px-4 py-1.5 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary hover:border-primary-container/50 text-sm transition-all font-body">
+          <span class="material-symbols-outlined text-base">refresh</span> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- 12 Metric Cards (2 rows × 6) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6" id="metricCards">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Service Health Banner -->
+    <div id="healthBanner" class="glass-card rounded-2xl p-5 mb-6 flex items-center gap-5 flex-wrap">
+      <div class="flex items-center gap-3">
+        <span id="healthIcon" class="material-symbols-outlined text-3xl text-emerald-success">check_circle</span>
+        <div>
+          <p class="font-display font-semibold text-on-surface text-lg" id="healthLabel">HEALTHY</p>
+          <p class="text-text-dim text-xs" id="healthSub">All systems operational</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-3 ml-auto" id="backendPills"></div>
+    </div>
+
+    <!-- Native Charts Panel (replaces Grafana when Docker not available) -->
+    <div class="glass-card rounded-2xl overflow-hidden mb-6">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-border-slate flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-base to-violet-accent flex items-center justify-center text-white text-sm font-bold">📈</div>
+          <div>
+            <p class="font-semibold text-on-surface text-sm">Live Observability Charts</p>
+            <p class="text-text-dim text-xs">Real-time charts from monitoring DB · auto-refresh every 10s</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-success pulse-live inline-block"></span>
+          <span class="text-xs font-mono text-emerald-success">Live</span>
+          <a href="/metrics" target="_blank"
+            class="flex items-center gap-1 px-3 py-1.5 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary text-xs transition-all">
+            <span class="material-symbols-outlined text-sm">data_object</span> /metrics
+          </a>
+        </div>
+      </div>
+
+      <!-- 4 charts in 2×2 grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y divide-border-slate lg:divide-y-0 lg:divide-x">
+
+        <!-- Chart 1: Latency timeseries -->
+        <div class="p-5 border-b border-border-slate lg:border-b-0">
+          <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">API Latency · 5-min buckets (ms)</p>
+          <div class="relative h-52"><canvas id="mLatencyChart"></canvas></div>
+        </div>
+
+        <!-- Chart 2: Policy donut -->
+        <div class="p-5 border-b border-border-slate lg:border-b-0">
+          <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">Policy Distribution</p>
+          <div class="relative h-52"><canvas id="mPolicyChart"></canvas></div>
+        </div>
+
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y divide-border-slate lg:divide-y-0 lg:divide-x border-t border-border-slate">
+
+        <!-- Chart 3: Throughput bar -->
+        <div class="p-5">
+          <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">Request Throughput · per 5-min window</p>
+          <div class="relative h-52"><canvas id="mThroughputChart"></canvas></div>
+        </div>
+
+        <!-- Chart 4: LLM backend calls -->
+        <div class="p-5">
+          <p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">LLM Calls by Backend</p>
+          <div class="relative h-52"><canvas id="mBackendChart"></canvas></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Prometheus raw link -->
+    <div class="glass-card rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-3 mb-6">
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-amber-warning">data_object</span>
+        <div>
+          <p class="text-sm font-semibold text-on-surface">Raw Prometheus Metrics</p>
+          <p class="text-xs text-text-dim">Scrape endpoint — open to see all counters, histograms and gauges</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <a href="/metrics" target="_blank" class="flex items-center gap-1 px-4 py-2 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary text-sm transition-all">
+          <span class="material-symbols-outlined text-base">open_in_new</span> /metrics
+        </a>
+        <a href="http://localhost:9090" target="_blank" class="flex items-center gap-1 px-4 py-2 bg-surface-container border border-border-slate rounded-lg text-text-dim hover:text-primary text-sm transition-all">
+          <span class="material-symbols-outlined text-base">open_in_new</span> Prometheus
+        </a>
+      </div>
+    </div>
+
+    <!-- Grafana Full Dashboard iframe -->
+    <div class="glass-card rounded-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-border-slate flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white font-bold text-base shadow-lg">G</div>
+          <div>
+            <p class="font-semibold text-on-surface">Grafana — Full Observability Suite</p>
+            <p class="text-text-dim text-xs">Prometheus-backed · p50/p95/p99 latency · policy donut · LLM backend pie · CPU/memory trends</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="grafanaStatus" class="flex items-center gap-1.5 text-xs font-mono text-text-dim">
+            <span class="w-2 h-2 rounded-full bg-text-dim animate-pulse"></span> Connecting…
+          </span>
+          <a href="http://localhost:3000/d/fasa-main" target="_blank"
+            class="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-lg text-xs font-semibold transition-all hover:opacity-90 hover:shadow-lg hover:shadow-orange-500/30">
+            <span class="material-symbols-outlined text-sm">open_in_new</span> Open Full Grafana
+          </a>
+        </div>
+      </div>
+
+      <div id="grafanaWrap">
+        <iframe
+          id="grafanaFrame"
+          src="http://localhost:3000/d/fasa-main?orgId=1&refresh=10s&kiosk=tv&theme=dark"
+          width="100%"
+          height="960"
+          frameborder="0"
+          style="display:none;background:#0f1117;border:none"
+          
+          title="Grafana FASA Dashboard">
+        </iframe>
+      </div>
+
+      <div id="grafanaFallback" class="hidden px-6 py-14 text-center">
+        <span class="material-symbols-outlined text-5xl text-text-dim mb-4 block">cloud_off</span>
+        <p class="font-semibold text-on-surface mb-2">Grafana Offline</p>
+        <p class="text-text-dim text-sm mb-5">Run: <code class="font-mono text-emerald-success bg-surface-container px-2 py-0.5 rounded">docker compose up prometheus grafana</code></p>
+        <a href="http://localhost:3000" target="_blank" class="text-primary text-sm underline">localhost:3000</a>
+        <span class="text-text-dim text-xs ml-2">· admin / fasaadmin</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- end content -->
+
+<script>
+// ── Tab switching ──
+function switchTab(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('header nav button').forEach(b => {
+    b.classList.remove('tab-active');
+    b.classList.add('text-text-dim');
+  });
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('tab-active');
+  el.classList.remove('text-text-dim');
+  if (id === 'dashboard') loadDashboard();
+  if (id === 'metrics') loadMetrics();
+}
+
+// ── Policy config ──
+const PC = {
+  confident: { label:'Confident', icon:'check_circle', text:'#10b981', bg:'rgba(16,185,129,.08)', border:'rgba(16,185,129,.35)', barColor:'#10b981' },
+  hedge:     { label:'Hedge',     icon:'help',          text:'#f59e0b', bg:'rgba(245,158,11,.08)',  border:'rgba(245,158,11,.35)',  barColor:'#f59e0b' },
+  re_search: { label:'Re-Search', icon:'refresh',       text:'#ef4444', bg:'rgba(239,68,68,.08)',   border:'rgba(239,68,68,.35)',   barColor:'#ef4444' },
+};
+const cfg = p => PC[p] || PC.hedge;
+
+// ── Search helpers ──
+function fill(el){ document.getElementById('queryInput').value = el.textContent.trim(); document.getElementById('queryInput').focus(); }
+
+const queryHistory = [];
+let _lastQueryResult = null;
+const _agentResponseCache = {};
+
+function parseVerdict(raw) {
+  try { return JSON.parse(raw || '{}'); } catch (_) { return {}; }
+}
+
+function extractAnswerText(text) {
+  if (!text) return '—';
+  return text.replace(/^Policy:\s*\S+\s*/i, '').replace(/^Final Response:\s*/i, '').trim() || text;
+}
+
+function formatAgentPayload(data) {
+  const agents = data.agent_responses || (data.raw ? {
+    inference_backend: data.raw.inference_backend,
+    search: data.raw.search,
+    verification: data.raw.verification,
+    final: data.raw.final,
+  } : null);
+  if (!agents && !data.final_response) return null;
+  const search = (agents && agents.search) || {};
+  const verify = (agents && agents.verification) || {};
+  const final = (agents && agents.final) || {};
+  const verdict = parseVerdict(verify.verification_verdict);
+  const composerText = final.final_response || data.final_response || '—';
+  const searchMeta = [
+    agents && agents.inference_backend ? `Pipeline: ${agents.inference_backend}` : null,
+    search.search_backend ? `Search backend: ${search.search_backend}` : null,
+    `Retrieval quality: ${search.retrieval_quality != null ? (search.retrieval_quality * 100).toFixed(0) + '%' : '—'}`,
+    `Policy hint: ${search.policy_hint || '—'}`,
+    search.quality_reasons && search.quality_reasons.length ? `Reasons: ${search.quality_reasons.join('; ')}` : null,
+  ].filter(Boolean).join(' · ');
+  return {
+    query: data.query || '',
+    inference_backend: (agents && agents.inference_backend) || 'mock',
+    search: search.search_draft || 'No search draft recorded.',
+    searchMeta,
+    searchLlm: search.llm_raw || null,
+    searchBadge: _agentBadge(search),
+    verification: verify.verification_verdict
+      ? JSON.stringify(verdict, null, 2)
+      : 'No verification verdict recorded.',
+    verificationMeta: `Verdict: ${verdict.verdict || '—'} · Confidence adj: ${verdict.confidence_adjustment != null ? ((verdict.confidence_adjustment >= 0 ? '+' : '') + Math.round(verdict.confidence_adjustment * 100) + '%') : '—'}`,
+    verificationLlm: verify.llm_raw || null,
+    verifyBadge: _agentBadge(verify),
+    composer: composerText,
+    composerMeta: `Policy: ${final.policy || data.policy || '—'} · Confidence: ${final.confidence != null ? Math.round(final.confidence * 100) + '%' : (data.confidence != null ? Math.round(data.confidence * 100) + '%' : '—')}`,
+    composerLlm: final.llm_raw || null,
+    composerBadge: _agentBadge(final),
+    answerPreview: extractAnswerText(composerText),
+  };
+}
+
+function _agentBadge(agent) {
+  if (!agent) return '';
+  const parts = [];
+  if (agent.llm_backend) parts.push(agent.llm_backend);
+  if (agent.llm_model) parts.push(agent.llm_model);
+  return parts.length ? `(${parts.join(' · ')})` : '(heuristic / no LLM)';
+}
+
+function _setLlmBlock(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (text) {
+    el.textContent = 'LLM raw output:\n' + text;
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+    el.textContent = '';
+  }
+}
+
+function openAgentModal(data) {
+  const p = formatAgentPayload(data);
+  if (!p) return;
+  document.getElementById('agentModalQuery').textContent = p.query;
+  document.getElementById('agentModalSearchBadge').textContent = p.searchBadge;
+  document.getElementById('agentModalSearchMeta').textContent = p.searchMeta;
+  document.getElementById('agentModalSearch').textContent = p.search;
+  _setLlmBlock('agentModalSearchLlm', p.searchLlm);
+  document.getElementById('agentModalVerifyBadge').textContent = p.verifyBadge;
+  document.getElementById('agentModalVerifyMeta').textContent = p.verificationMeta;
+  document.getElementById('agentModalVerify').textContent = p.verification;
+  _setLlmBlock('agentModalVerifyLlm', p.verificationLlm);
+  document.getElementById('agentModalComposerBadge').textContent = p.composerBadge;
+  document.getElementById('agentModalComposerMeta').textContent = p.composerMeta;
+  document.getElementById('agentModalComposer').textContent = p.composer;
+  _setLlmBlock('agentModalComposerLlm', p.composerLlm);
+  document.getElementById('agentModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function openAgentModalFromLive() {
+  if (_lastQueryResult) openAgentModal(_lastQueryResult);
+}
+
+function openAgentModalById(id) {
+  if (_agentResponseCache[id]) openAgentModal(_agentResponseCache[id]);
+}
+
+function closeAgentModal() {
+  document.getElementById('agentModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAgentModal(); });
+
+async function submitQuery() {
+  const q = document.getElementById('queryInput').value.trim();
+  if (!q) return;
+  const useVoting = document.getElementById('useVotingToggle') ? document.getElementById('useVotingToggle').checked : false;
+  const searchMode = document.getElementById('searchMode') ? document.getElementById('searchMode').value : 'general';
+  
+  const btn = document.getElementById('submitBtn');
+  const icon = document.getElementById('btnIcon');
+  btn.disabled = true; icon.textContent = '⏳';
+  document.getElementById('loader').classList.remove('hidden');
+  document.getElementById('loader').classList.add('flex');
+  document.getElementById('result').classList.add('hidden');
+  document.getElementById('errBox').classList.add('hidden');
+  try {
+    const payload = { query: q, use_voting: useVoting, mode: searchMode };
+    const res = await fetch('/query', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    if (!res.ok) { const e = await res.json().catch(()=>({detail:res.statusText})); throw new Error(e.detail||'Request failed'); }
+    const data = await res.json();
+    renderResult(data);
+    addHistory(data);
+  } catch(e) {
+    const eb = document.getElementById('errBox');
+    eb.textContent = '⚠ ' + e.message; eb.classList.remove('hidden');
+  } finally {
+    document.getElementById('loader').classList.add('hidden');
+    document.getElementById('loader').classList.remove('flex');
+    btn.disabled = false; icon.textContent = '⚡';
+  }
+}
+
+function renderResult(data) {
+  _lastQueryResult = data;
+  const c = cfg(data.policy || 'hedge');
+  const conf = Math.round((data.confidence || 0) * 100);
+
+  const badge = document.getElementById('policyBadge');
+  badge.innerHTML = `<span class="material-symbols-outlined text-sm">${c.icon}</span>${c.label}`;
+  badge.style.cssText = `color:${c.text};background:${c.bg};border-color:${c.border};box-shadow:0 0 20px ${c.bg}`;
+
+  const fill = document.getElementById('confFill');
+  fill.style.background = c.barColor;
+  setTimeout(() => fill.style.width = conf + '%', 50);
+  const pct = document.getElementById('confPct');
+  pct.textContent = conf + '%'; pct.style.color = c.barColor;
+
+  const payload = formatAgentPayload(data);
+  const txt = payload ? payload.answerPreview : extractAnswerText(data.final_response || '');
+  document.getElementById('respText').textContent = txt;
+
+  const raw = data.raw || {}, s = raw.search || {}, v = raw.verification || {}, f = raw.final || {};
+  const vobj = parseVerdict(v.verification_verdict);
+  document.getElementById('pSearch').textContent = s.search_draft || '—';
+  document.getElementById('pSearchMeta').textContent = `backend: ${s.search_backend||'—'} · retrieval: ${s.retrieval_quality != null ? (s.retrieval_quality * 100).toFixed(0) + '%' : '—'} · hint: ${s.policy_hint || '—'}`;
+  document.getElementById('pVerify').textContent = v.verification_verdict
+    ? (vobj.conflict_summary || (vobj.verified_facts && vobj.verified_facts[0]) || `Verdict: ${vobj.verdict || '—'}`)
+    : '—';
+  document.getElementById('pVerifyMeta').textContent = `verdict: ${vobj.verdict || '—'} · adj: ${vobj.confidence_adjustment != null ? ((vobj.confidence_adjustment >= 0 ? '+' : '') + Math.round(vobj.confidence_adjustment * 100) + '%') : '—'} · backend: ${v.llm_backend || 'wikipedia'}`;
+  document.getElementById('pComposer').textContent = f.final_response || data.final_response || '—';
+  document.getElementById('pComposerMeta').textContent = `policy: ${f.policy || data.policy || '—'} · confidence: ${conf}% · backend: ${f.llm_backend || 'rules'}`;
+
+  // ── Multi-Agent Voting ──
+  const vPanel = document.getElementById('votingPanel');
+  const vTbody = document.getElementById('votingTbody');
+  if (raw.vote_summary && vPanel && vTbody) {
+    vTbody.innerHTML = '';
+    raw.vote_summary.vote_breakdown.forEach(vote => {
+      const vColor = vote.verdict === 'confirmed' ? 'text-emerald-success' : vote.verdict === 'unverified' ? 'text-amber-warning' : 'text-ruby-error';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="px-4 py-3 font-semibold text-on-surface">${esc(vote.agent)}</td>
+        <td class="px-4 py-3 font-mono text-[11px] ${vColor} font-bold">${esc(vote.verdict)}</td>
+        <td class="px-4 py-3 font-mono text-[11px] text-on-surface">${Math.round(vote.confidence*100)}%</td>
+        <td class="px-4 py-3 font-mono text-[11px] text-text-dim">${vote.weight}</td>
+        <td class="px-4 py-3 text-text-dim leading-relaxed max-w-md">${esc(vote.reasoning)}</td>
+      `;
+      vTbody.appendChild(tr);
+    });
+    document.getElementById('voteFinalVerdict').textContent = raw.vote_summary.final_verdict;
+    document.getElementById('voteFinalScore').textContent = raw.vote_summary.final_score.toFixed(2);
+    vPanel.classList.remove('hidden');
+  } else if (vPanel) {
+    vPanel.classList.add('hidden');
+  }
+
+  document.getElementById('result').classList.remove('hidden');
+
+  // Render explainability
+  renderExplainCard(data.explanation, data.raw);
+}
+
+// ── Explainability Card ───────────────────────────────────────────────────
+
+const TIER_STYLES = {
+  authoritative: { bg:'rgba(16,185,129,.12)', border:'rgba(16,185,129,.4)', text:'#10b981', label:'Authoritative' },
+  credible:      { bg:'rgba(99,102,241,.12)',  border:'rgba(99,102,241,.4)', text:'#818cf8', label:'Credible'      },
+  average:       { bg:'rgba(245,158,11,.12)',  border:'rgba(245,158,11,.4)', text:'#f59e0b', label:'Average'       },
+  low:           { bg:'rgba(239,68,68,.12)',   border:'rgba(239,68,68,.4)', text:'#f87171', label:'Low'           },
+};
+
+function renderExplainCard(explanation, raw) {
+  const card = document.getElementById('explainCard');
+  if (!explanation) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+
+  // ── Factors ──
+  const chips = document.getElementById('factorChips');
+  chips.innerHTML = '';
+  (explanation.factors || []).forEach(f => {
+    const passed = f.passed;
+    const icon = f.icon || (passed ? '✔' : '✖');
+    const color = icon === '✔' ? '#10b981' : icon === '⚠' ? '#f59e0b' : '#f87171';
+    const bg = icon === '✔' ? 'rgba(16,185,129,.08)' : icon === '⚠' ? 'rgba(245,158,11,.08)' : 'rgba(239,68,68,.08)';
+    const border = icon === '✔' ? 'rgba(16,185,129,.3)' : icon === '⚠' ? 'rgba(245,158,11,.3)' : 'rgba(239,68,68,.3)';
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-3 rounded-lg px-4 py-2.5 border text-sm';
+    div.style.cssText = `background:${bg};border-color:${border}`;
+    div.innerHTML = `<span class="font-bold text-base leading-none" style="color:${color}">${icon}</span><span class="text-on-surface">${esc(f.label)}</span>`;
+    chips.appendChild(div);
+  });
+
+  // ── Failure Reason Panel ──
+  const failPanel = document.getElementById('failurePanel');
+  const failList = document.getElementById('failureList');
+  if (failPanel && failList) {
+    if (explanation.failure_reasons && explanation.failure_reasons.length > 0) {
+      failList.innerHTML = '';
+      document.getElementById('failurePanelTitle').textContent = `Why ${explanation.policy_chosen === 'hedge' ? 'Hedge' : 'Re-Search'}?`;
+      explanation.failure_reasons.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-3 text-[15px]';
+        const icon = r.passed ? '✓' : '✗';
+        const color = r.passed ? 'text-emerald-success' : 'text-ruby-error font-bold';
+        div.innerHTML = `<span class="${color}">${icon}</span><span class="text-text-dim">${esc(r.label)}</span>`;
+        failList.appendChild(div);
+      });
+      failPanel.classList.remove('hidden');
+    } else {
+      failPanel.classList.add('hidden');
+    }
+  }
+
+  // ── SHAP-style Confidence Breakdown ──
+  const bd = explanation.confidence_breakdown || {};
+  if (document.getElementById('shapRetrieval')) {
+    setTimeout(() => {
+      document.getElementById('shapRetrieval').style.width = (bd.retrieval_contribution_pct||0) + '%';
+      document.getElementById('shapVerification').style.width = (bd.verification_contribution_pct||0) + '%';
+      document.getElementById('shapTrust').style.width = (bd.trust_contribution_pct||0) + '%';
+      document.getElementById('shapConflict').style.width = Math.abs(bd.conflict_penalty_pct||0) + '%';
+    }, 80);
+    document.getElementById('shapRetrievalVal').textContent = (bd.retrieval_contribution_pct||0) + '%';
+    document.getElementById('shapVerificationVal').textContent = (bd.verification_contribution_pct||0) + '%';
+    document.getElementById('shapTrustVal').textContent = (bd.trust_contribution_pct||0) + '%';
+    document.getElementById('shapConflictVal').textContent = (bd.conflict_penalty_pct||0) + '%';
+    document.getElementById('shapFinal').textContent = (bd.final_pct||0) + '%';
+    document.getElementById('formulaText').textContent = bd.formula || '';
+  }
+
+  // ── Policy Reason ──
+  document.getElementById('policyReasonText').textContent = explanation.policy_reason || '—';
+
+  // ── Source Trust Table ──
+  const sources = explanation.source_trust_scores || [];
+  const section = document.getElementById('sourceTrustSection');
+  const tbody = document.getElementById('sourceTrustBody');
+  tbody.innerHTML = '';
+  if (sources.length) {
+    section.classList.remove('hidden');
+    sources.forEach(s => {
+      const tier = s.trust_tier || 'average';
+      const ts = TIER_STYLES[tier] || TIER_STYLES.average;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="px-4 py-2.5 font-mono text-on-surface">${esc(s.domain || '—')}</td>
+        <td class="px-4 py-2.5">
+          <div class="flex items-center gap-2">
+            <div class="w-16 h-1.5 bg-surface-container rounded-full overflow-hidden">
+              <div class="h-full rounded-full" style="width:${s.trust_pct||s.trust_score||0}%;background:${ts.text}"></div>
+            </div>
+            <span class="font-mono text-xs" style="color:${ts.text}">${s.trust_pct||s.trust_score||'—'}%</span>
+          </div>
+        </td>
+        <td class="px-4 py-2.5">
+          <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border uppercase tracking-wide"
+            style="background:${ts.bg};border-color:${ts.border};color:${ts.text}">${ts.label}</span>
+        </td>
+        <td class="px-4 py-2.5 text-text-dim truncate max-w-[180px]" title="${esc(s.url||'')}">
+          ${s.url ? `<a href="${esc(s.url)}" target="_blank" class="hover:text-primary transition-colors">${esc(s.url.length > 40 ? s.url.slice(0,40)+'…' : s.url)}</a>` : '—'}
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  } else {
+    section.classList.add('hidden');
+  }
+}
+
+let _explainCollapsed = false;
+function toggleExplain() {
+  _explainCollapsed = !_explainCollapsed;
+  document.getElementById('explainBody').style.display = _explainCollapsed ? 'none' : '';
+  document.getElementById('explainToggle').querySelector('.material-symbols-outlined').textContent =
+    _explainCollapsed ? 'expand_more' : 'expand_less';
+}
+
+function addHistory(data) {
+  queryHistory.unshift(data);
+  document.getElementById('historyPanel').classList.remove('hidden');
+  const list = document.getElementById('histList');
+  const c = cfg(data.policy || 'hedge');
+  const conf = Math.round((data.confidence || 0) * 100);
+  const row = document.createElement('div');
+  row.className = 'flex items-center gap-3 glass-card rounded-xl px-4 py-3 hover:-translate-y-0.5 transition-all';
+
+  const mainBtn = document.createElement('button');
+  mainBtn.type = 'button';
+  mainBtn.className = 'flex-1 flex items-center gap-3 text-left min-w-0';
+  mainBtn.innerHTML = `
+    <span class="flex-1 text-sm text-on-surface truncate">${esc(data.query)}</span>
+    <span class="font-mono text-xs text-text-dim shrink-0">${conf}%</span>
+    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full border shrink-0" style="color:${c.text};border-color:${c.border};background:${c.bg}">${c.label}</span>`;
+  mainBtn.onclick = () => {
+    document.getElementById('queryInput').value = data.query;
+    renderResult(data);
+  };
+
+  const eyeBtn = document.createElement('button');
+  eyeBtn.type = 'button';
+  eyeBtn.className = 'eye-btn shrink-0';
+  eyeBtn.title = 'View agent responses';
+  eyeBtn.innerHTML = '<span class="material-symbols-outlined text-base">visibility</span>';
+  eyeBtn.onclick = (e) => { e.stopPropagation(); openAgentModal(data); };
+
+  row.appendChild(mainBtn);
+  row.appendChild(eyeBtn);
+  list.prepend(row);
+}
+
+function renderResultFromHistory(idx) {
+  const data = queryHistory[idx];
+  if (data) {
+    document.getElementById('queryInput').value = data.query;
+    renderResult(data);
+  }
+}
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════════════ METRICS PAGE ══════════════════
+
+const METRIC_DEFS = [
+  { key:'total_requests',    label:'Total Requests',     icon:'query_stats',    unit:'',    color:'#6c9eff', fmt: v => v ?? '—' },
+  { key:'success_rate',      label:'Success Rate',       icon:'check_circle',   unit:'',    color:'#4ade80', fmt: v => v==null?'—':(v*100).toFixed(1)+'%' },
+  { key:'failed_requests',   label:'Failed Requests',    icon:'cancel',         unit:'',    color:'#f87171', fmt: v => v ?? '0' },
+  { key:'avg_response_ms',   label:'Avg Response Time',  icon:'timer',          unit:'ms',  color:'#fcbb36', fmt: v => v==null?'—':Math.round(v)+' ms' },
+  { key:'active_users',      label:'Active Users',       icon:'group',          unit:'',    color:'#a78bfa', fmt: v => v ?? '—' },
+  { key:'cpu_percent',       label:'CPU Usage',          icon:'memory',         unit:'%',   color:'#06b6d4', fmt: v => v==null?'—':v.toFixed(1)+'%' },
+  { key:'memory_percent',    label:'Memory Usage',       icon:'storage',        unit:'%',   color:'#f59e0b', fmt: v => v==null?'—':v.toFixed(1)+'%' },
+  { key:'api_latency_ms',    label:'API Latency',        icon:'network_ping',   unit:'ms',  color:'#818cf8', fmt: v => v==null?'—':Math.round(v)+' ms' },
+  { key:'error_rate',        label:'Error Rate',         icon:'warning',        unit:'',    color:'#ef4444', fmt: v => v==null?'—':(v*100).toFixed(2)+'%' },
+  { key:'throughput_rpm',    label:'Throughput',         icon:'speed',          unit:'rpm', color:'#34d399', fmt: v => v==null?'—':v.toFixed(1)+' rpm' },
+  { key:'uptime_seconds',    label:'System Uptime',      icon:'schedule',       unit:'',    color:'#60a5fa', fmt: v => { if(v==null)return '—'; const h=Math.floor(v/3600),m=Math.floor((v%3600)/60),s=Math.floor(v%60); return h?`${h}h ${m}m`:`${m}m ${s}s`; } },
+  { key:'service_health',    label:'Service Health',     icon:'favorite',       unit:'',    color:'#4ade80', fmt: v => v=='healthy'?'HEALTHY':v=='degraded'?'DEGRADED':'—' },
+];
+
+function buildMetricCards(data) {
+  const grid = document.getElementById('metricCards');
+  grid.innerHTML = METRIC_DEFS.map(def => {
+    const val = data[def.key];
+    const display = def.fmt(val);
+    const isHealth = def.key === 'service_health';
+    const col = isHealth && val === 'degraded' ? '#f87171' : def.color;
+    return `<div class="glass-card rounded-2xl p-4 hover:-translate-y-1 transition-all group">
+      <span class="material-symbols-outlined text-xl mb-2 block" style="color:${col}">${def.icon}</span>
+      <p class="font-mono text-[9px] text-text-dim uppercase tracking-widest mb-1 leading-tight">${def.label}</p>
+      <p class="font-display text-2xl font-bold" style="color:${col}">${display}</p>
+    </div>`;
+  }).join('');
+}
+
+function buildHealthBanner(data) {
+  const healthy = data.service_health === 'healthy';
+  const icon = document.getElementById('healthIcon');
+  const label = document.getElementById('healthLabel');
+  const sub = document.getElementById('healthSub');
+  icon.textContent = healthy ? 'check_circle' : 'warning';
+  icon.style.color = healthy ? '#4ade80' : '#f87171';
+  label.textContent = healthy ? 'ALL SYSTEMS HEALTHY' : 'DEGRADED — Check error rate';
+  label.style.color = healthy ? '#4ade80' : '#f87171';
+  sub.textContent = healthy
+    ? `Uptime ${formatUptime(data.uptime_seconds)} · ${data.total_requests} requests processed`
+    : `Error rate: ${data.error_rate!=null?(data.error_rate*100).toFixed(2)+'%':'—'} · Investigate LLM backend`;
+
+  const pills = document.getElementById('backendPills');
+  const backends = data.llm_backends || [];
+  const BCOLS = { tinyllama:'#a78bfa', phi3:'#06b6d4', ollama:'#fbbf24', huggingface:'#4ade80', mock:'#64748b' };
+  pills.innerHTML = backends.map(b => {
+    const c = BCOLS[b.backend] || '#94a3b8';
+    return `<div class="flex items-center gap-2 px-3 py-1.5 rounded-full border" style="border-color:${c}33;background:${c}12">
+      <span class="w-1.5 h-1.5 rounded-full" style="background:${c}"></span>
+      <span class="font-mono text-xs font-semibold" style="color:${c}">${b.backend}</span>
+      <span class="text-text-dim text-xs">${b.count} calls</span>
+    </div>`;
+  }).join('');
+}
+
+function formatUptime(s) {
+  if (!s) return '—';
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+
+let _grafanaChecked = false;
+function onGrafanaLoad() {
+  document.getElementById('grafanaStatus').innerHTML = `<span style="color:#4ade80">● Connected</span>`;
+  document.getElementById('grafanaFrame').style.display = 'block';
+  document.getElementById('grafanaFallback').classList.add('hidden');
+}
+function onGrafanaError() {
+  document.getElementById('grafanaStatus').innerHTML = `<span style="color:#f87171">● Offline</span>`;
+  document.getElementById('grafanaFrame').style.display = 'none';
+  document.getElementById('grafanaFallback').classList.remove('hidden');
+}
+
+async function checkGrafana() {
+  if (_grafanaChecked) return;
+  try {
+    await fetch('http://localhost:3000/api/health', { mode: 'no-cors', signal: AbortSignal.timeout(2000) });
+    onGrafanaLoad(); _grafanaChecked = true;
+  } catch { onGrafanaError(); }
+}
+
+async function loadMetrics() {
+  try {
+    const [snapRes, tsRes, sumRes, llmRes] = await Promise.all([
+      fetch('/api/metrics/snapshot'),
+      fetch('/api/monitoring/timeseries'),
+      fetch('/api/monitoring/summary'),
+      fetch('/api/monitoring/llm?limit=100'),
+    ]);
+    const data  = await snapRes.json();
+    const ts    = await tsRes.json();
+    const sum   = await sumRes.json();
+    const llm   = await llmRes.json();
+
+    buildMetricCards(data);
+    buildHealthBanner(data);
+    buildMetricsCharts(ts, sum, llm, data);
+    document.getElementById('metricsUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) { console.error('Metrics error', e); }
+  checkGrafana();
+}
+
+const mCharts = {};
+function mkMChart(id, type, data, opts={}) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  if (mCharts[id]) mCharts[id].destroy();
+  const base = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:'#8b92a8', font:{size:11,family:'JetBrains Mono'}, boxWidth:10, padding:8 } } },
+    scales:{ x:{ ticks:{color:'#8b92a8',font:{size:10}}, grid:{color:'rgba(46,51,69,.5)'} },
+             y:{ ticks:{color:'#8b92a8',font:{size:10}}, grid:{color:'rgba(46,51,69,.5)'} } },
+  };
+  mCharts[id] = new Chart(ctx, { type, data, options:{ ...base, ...opts } });
+}
+
+function buildMetricsCharts(ts, sum, llm, snap) {
+  const lat = ts.latency || [];
+  const live = (sum.live) || {};
+  const calls = llm.calls || [];
+
+  // ── Chart 1: Latency timeseries ──
+  mkMChart('mLatencyChart', 'line', {
+    labels: lat.length ? lat.map(p => p.ts_iso?.slice(11,16)||'') : ['No data'],
+    datasets: [{
+      label: 'Avg latency (ms)',
+      data: lat.length ? lat.map(p => p.avg_latency_ms) : [0],
+      borderColor: '#6c9eff', backgroundColor: 'rgba(108,158,255,.12)',
+      fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#6c9eff',
+      borderWidth: 2,
+    }]
+  }, { plugins:{ legend:{display:false} } });
+
+  // ── Chart 2: Policy donut ──
+  const dist = live.policy_distribution || {};
+  const pkeys = Object.keys(dist);
+  const pColors = { confident:'#10b981', hedge:'#f59e0b', re_search:'#ef4444' };
+  mkMChart('mPolicyChart', 'doughnut', {
+    labels: pkeys.length ? pkeys.map(k => PC[k]?.label || k) : ['No data'],
+    datasets: [{
+      data: pkeys.length ? pkeys.map(k => dist[k]) : [1],
+      backgroundColor: pkeys.length ? pkeys.map(k => pColors[k] || '#6366f1') : ['#2e3345'],
+      borderWidth: 0, hoverBorderWidth: 2, hoverBorderColor: '#fff',
+    }]
+  }, {
+    plugins:{ legend:{ position:'right', labels:{ color:'#94a3b8', font:{size:11,family:'JetBrains Mono'}, boxWidth:10, padding:10 } } },
+    scales:{ x:{display:false}, y:{display:false} }
+  });
+
+  // ── Chart 3: Throughput bar (count per timeseries bucket) ──
+  mkMChart('mThroughputChart', 'bar', {
+    labels: lat.length ? lat.map(p => p.ts_iso?.slice(11,16)||'') : ['No data'],
+    datasets: [{
+      label: 'Requests / 5 min',
+      data: lat.length ? lat.map(p => p.count || 0) : [0],
+      backgroundColor: 'rgba(99,102,241,.6)', borderColor: '#6366f1',
+      borderWidth: 1, borderRadius: 4,
+    }]
+  }, { plugins:{ legend:{display:false} } });
+
+  // ── Chart 4: LLM backend breakdown bar ──
+  const bkMap = {};
+  calls.forEach(c => { bkMap[c.backend] = (bkMap[c.backend]||0) + 1; });
+  const bkKeys = Object.keys(bkMap);
+  const BCOLS = { tinyllama:'rgba(167,139,250,.7)', phi3:'rgba(6,182,212,.7)', ollama:'rgba(251,191,36,.7)', huggingface:'rgba(16,185,129,.7)', mock:'rgba(100,116,139,.7)' };
+  mkMChart('mBackendChart', 'bar', {
+    labels: bkKeys.length ? bkKeys : ['No calls yet'],
+    datasets: [{
+      label: 'Total calls',
+      data: bkKeys.length ? bkKeys.map(k => bkMap[k]) : [0],
+      backgroundColor: bkKeys.length ? bkKeys.map(k => BCOLS[k]||'rgba(99,102,241,.6)') : ['#2e3345'],
+      borderWidth: 0, borderRadius: 6,
+    }]
+  }, { plugins:{ legend:{display:false} }, indexAxis:'y' });
+}
+
+// ══════════════════ DASHBOARD ══════════════════
+const charts = {};
+const CHART_OPTS = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{ labels:{ color:'#8b92a8', font:{size:11,family:'JetBrains Mono'} } } },
+  scales:{ x:{ ticks:{color:'#8b92a8',font:{size:10}}, grid:{color:'rgba(46,51,69,.6)'} }, y:{ ticks:{color:'#8b92a8',font:{size:10}}, grid:{color:'rgba(46,51,69,.6)'} } },
+};
+function mkChart(id, type, data, extra={}) {
+  const ctx = document.getElementById(id);
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, { type, data, options:{...CHART_OPTS,...extra} });
+}
+function fmtPct(v){ return v==null ? '—' : (v*100).toFixed(1)+'%'; }
+
+const BACKEND_COLORS = { tinyllama:'#a78bfa', phi3:'#06b6d4', ollama:'#fbbf24', huggingface:'#10b981', mock:'#64748b' };
+function backendBadge(name){ const c = BACKEND_COLORS[name]||'#94a3b8'; return `<span class="font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-full border" style="color:${c};border-color:${c}33;background:${c}12">${name}</span>`; }
+function policyTag(p){ const c=cfg(p); return `<span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border" style="color:${c.text};border-color:${c.border};background:${c.bg}">${c.label}</span>`; }
+function statusTag(ok){ return ok ? `<span class="text-[11px] text-emerald-success bg-emerald-success/8 border border-emerald-success/25 px-2.5 py-0.5 rounded-full font-semibold">ok</span>` : `<span class="text-[11px] text-ruby-error bg-ruby-error/8 border border-ruby-error/25 px-2.5 py-0.5 rounded-full font-semibold">error</span>`; }
+function emptyRow(cols, msg){ return `<tr><td colspan="${cols}" class="px-5 py-6 text-text-dim text-sm text-center">${msg}</td></tr>`; }
+
+async function loadDashboard() {
+  try {
+    const [sumRes, qRes, llmRes, tsRes] = await Promise.all([
+      fetch('/api/monitoring/summary'),
+      fetch('/api/monitoring/queries?limit=30'),
+      fetch('/api/monitoring/llm?limit=30'),
+      fetch('/api/monitoring/timeseries'),
+    ]);
+    const sum = await sumRes.json();
+    const qs  = await qRes.json();
+    const llm = await llmRes.json();
+    const ts  = await tsRes.json();
+    const live = sum.live || {};
+
+    document.getElementById('mTotal').textContent   = live.total_queries ?? '0';
+    document.getElementById('mLatency').textContent = live.avg_latency_ms ? Math.round(live.avg_latency_ms)+' ms' : '—';
+    document.getElementById('mConf').textContent    = fmtPct(live.avg_confidence);
+    document.getElementById('mErr').textContent     = fmtPct(live.error_rate);
+    document.getElementById('mErrCount').textContent= (live.error_count||0)+' errors';
+
+    const backends = live.llm_by_backend || [];
+    document.getElementById('backendSummary').innerHTML = backends.length
+      ? `<p class="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">LLM Backends Active</p><div class="flex flex-wrap gap-4">${
+          backends.map(b => {
+            const c = BACKEND_COLORS[b.backend]||'#94a3b8';
+            return `<div class="flex items-center gap-3 bg-surface-container border border-border-slate rounded-xl px-4 py-2.5">
+              <span class="font-mono text-sm font-semibold" style="color:${c}">${b.backend}</span>
+              <span class="text-text-dim text-xs font-mono">${b.count} calls · avg ${b.avg_latency_ms?b.avg_latency_ms.toFixed(0)+'ms':'—'}</span>
+              ${b.errors ? `<span class="text-ruby-error text-xs">${b.errors} err</span>` : '<span class="text-emerald-success text-xs">✓ clean</span>'}
+            </div>`;
+          }).join('')
+        }</div>`
+      : `<p class="text-text-dim text-sm">No LLM backends recorded yet.</p>`;
+
+    const dist = live.policy_distribution || {};
+    const pkeys = Object.keys(dist);
+    const pColors = {confident:'#10b981',hedge:'#f59e0b',re_search:'#ef4444'};
+    if (pkeys.length) {
+      mkChart('policyChart','doughnut',{
+        labels:pkeys.map(k=>PC[k]?.label||k),
+        datasets:[{data:pkeys.map(k=>dist[k]),backgroundColor:pkeys.map(k=>pColors[k]||'#6366f1'),borderWidth:0,hoverBorderWidth:2,hoverBorderColor:'#fff'}]
+      },{plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:11,family:'JetBrains Mono'},boxWidth:10,padding:10}}},scales:{x:{display:false},y:{display:false}}});
+    }
+
+    const lat = ts.latency || [];
+    mkChart('latencyChart','line',{
+      labels:lat.length ? lat.map(p=>p.ts_iso?.slice(11,16)||'') : ['—'],
+      datasets:[{ label:'Avg latency (ms)', data:lat.length ? lat.map(p=>p.avg_latency_ms) : [0],
+        borderColor:'#6c9eff', backgroundColor:'rgba(108,158,255,.08)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#6c9eff' }]
+    },{plugins:{legend:{display:false}}});
+
+    const qtbody = document.getElementById('queryTbody');
+    const qrows = qs.queries || [];
+    qrows.forEach(r => {
+      _agentResponseCache[r.id] = {
+        query: r.query,
+        policy: r.policy,
+        confidence: r.confidence,
+        final_response: r.final_response,
+        agent_responses: r.agent_responses,
+      };
+    });
+    qtbody.innerHTML = qrows.length
+      ? qrows.map(r => {
+          const preview = r.final_response
+            ? esc(extractAnswerText(r.final_response).slice(0, 80) + (extractAnswerText(r.final_response).length > 80 ? '…' : ''))
+            : (r.agent_responses ? '<span class="text-text-dim italic">View agents</span>' : '<span class="text-text-dim">—</span>');
+          const hasAgents = !!(r.agent_responses || r.final_response);
+          return `<tr class="hover:bg-surface-container/40 transition-colors">
+          <td class="px-5 py-3 font-mono text-[10px] text-text-dim whitespace-nowrap">${r.ts_iso||'—'}</td>
+          <td class="px-5 py-3 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap text-sm" title="${esc(r.query||'')}">${esc(r.query||'—')}</td>
+          <td class="px-5 py-3">${policyTag(r.policy||'hedge')}</td>
+          <td class="px-5 py-3 font-mono text-sm" style="color:${cfg(r.policy||'hedge').text}">${fmtPct(r.confidence)}</td>
+          <td class="px-5 py-3 font-mono text-sm text-text-dim">${r.latency_ms!=null?r.latency_ms.toFixed(0)+' ms':'—'}</td>
+          <td class="px-5 py-3 font-mono text-sm text-text-dim">${r.retrieval_quality!=null?r.retrieval_quality.toFixed(2):'—'}</td>
+          <td class="px-5 py-3 text-sm text-on-surface max-w-[180px] overflow-hidden text-ellipsis whitespace-nowrap" title="${esc(extractAnswerText(r.final_response||''))}">${preview}</td>
+          <td class="px-5 py-3">${statusTag(r.status==='ok')}</td>
+          <td class="px-3 py-3 text-center">${hasAgents ? `<button type="button" class="eye-btn mx-auto" title="View agent responses" onclick="openAgentModalById(${r.id})"><span class="material-symbols-outlined text-base">visibility</span></button>` : '<span class="text-text-dim text-xs">—</span>'}</td>
+        </tr>`;
+        }).join('')
+      : emptyRow(9,'No queries yet — run a search from the Query Agent tab');
+
+    const ltbody = document.getElementById('llmTbody');
+    const lcalls = llm.calls || [];
+    ltbody.innerHTML = lcalls.length
+      ? lcalls.map(r => `<tr class="hover:bg-surface-container/40 transition-colors">
+          <td class="px-5 py-3 font-mono text-[10px] text-text-dim whitespace-nowrap">${r.ts_iso||'—'}</td>
+          <td class="px-5 py-3">${backendBadge(r.backend||'?')}</td>
+          <td class="px-5 py-3 font-mono text-[11px] text-text-dim">${r.agent||'—'}</td>
+          <td class="px-5 py-3 font-mono text-[11px] text-text-dim max-w-[140px] overflow-hidden text-ellipsis whitespace-nowrap" title="${esc(r.model||'')}">${r.model||'—'}</td>
+          <td class="px-5 py-3 font-mono text-[10px] text-text-dim">${r.context||'—'}</td>
+          <td class="px-5 py-3 font-mono text-sm text-on-surface">${r.latency_ms!=null?r.latency_ms.toFixed(0)+' ms':'—'}</td>
+          <td class="px-5 py-3 font-mono text-sm text-text-dim">${r.prompt_chars??'—'} ch</td>
+          <td class="px-5 py-3 font-mono text-sm text-text-dim">${r.response_chars??'—'} ch</td>
+          <td class="px-5 py-3">${statusTag(r.success)}</td>
+        </tr>`).join('')
+      : emptyRow(9,'No LLM calls recorded — run offline rollouts or set INFERENCE_BACKEND=ollama');
+
+    document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) { console.error('Dashboard error', e); }
+}
+
+setInterval(() => {
+  const active = document.querySelector('.page.active');
+  if (!active) return;
+  if (active.id === 'page-dashboard') loadDashboard();
+  if (active.id === 'page-metrics')   loadMetrics();
+}, 10000);
+</script>
+</body>
+</html>

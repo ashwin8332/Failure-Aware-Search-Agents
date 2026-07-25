@@ -1,0 +1,31 @@
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# Data & checkpoints
+data/rollouts/
+data/preference_pairs/
+data/scored_trajectories.jsonl
+checkpoints/
+results/
+wandb/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

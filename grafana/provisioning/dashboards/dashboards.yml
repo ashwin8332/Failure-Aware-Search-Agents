@@ -1,0 +1,11 @@
+apiVersion: 1
+providers:
+  - name: "FASA Dashboards"
+    orgId: 1
+    folder: "FASA"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards
